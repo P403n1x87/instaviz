@@ -1,13 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Code Object Visualizer</title>
-    <link rel="stylesheet" href="static/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T">
+    <link rel="stylesheet" href="static/bootstrap.min.css"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T">
     <style>
         {{style}}
     </style>
-        <style type="text/css">
+    <style type="text/css">
         body {
             font: 12pt sans;
         }
@@ -39,7 +41,7 @@
             }
         }
     </script>
-     <script type="text/javascript">
+    <script type="text/javascript">
         var nodes = null;
         var nodeData = new Map();
         var edges = null;
@@ -64,42 +66,42 @@
                 nodeData.set({{node.id}}, {{node.data}});
             {% endfor %}
 
-            // create a network
-            var container = document.getElementById('mynetwork');
-            var data = {
-                nodes: nodes,
-                edges: edges
-            };
+        // create a network
+        var container = document.getElementById('mynetwork');
+        var data = {
+            nodes: nodes,
+            edges: edges
+        };
 
-            var options = {
-                edges: {
-                    smooth: {
-                        type: 'cubicBezier',
-                        forceDirection: (directionInput.value == "UD" || directionInput.value == "DU") ? 'vertical' : 'horizontal',
-                        roundness: 0.4
-                    }
-                },
-                layout: {
-                    hierarchical: {
-                        direction: directionInput.value
-                    }
-                },
+        var options = {
+            edges: {
+                smooth: {
+                    type: 'cubicBezier',
+                    forceDirection: (directionInput.value == "UD" || directionInput.value == "DU") ? 'vertical' : 'horizontal',
+                    roundness: 0.4
+                }
+            },
+            layout: {
+                hierarchical: {
+                    direction: directionInput.value
+                }
+            },
                 physics:false
-            };
-            network = new vis.Network(container, data, options);
+        };
+        network = new vis.Network(container, data, options);
 
-            // add event listeners
-            network.on('select', function (params) {
-                var d = nodeData.get(params.nodes[0]);
-                visualize(d);
-                if (d != undefined && d.lineno) {
-                    showLine(d.lineno + {{co.co_firstlineno}} -1);
+        // add event listeners
+        network.on('select', function (params) {
+            var d = nodeData.get(params.nodes[0]);
+            visualize(d);
+            if (d != undefined && d.lineno) {
+                    showLine(d.lineno + {{co.firstlineno}} -1);
                 }
             });
-            network.on('deselectNode', function (params) {
-                for (var i = {{co.co_firstlineno}}; i <= {{last_line}}; i++){
-                    unshowLine(i);
-                }
+        network.on('deselectNode', function (params) {
+                for (var i = {{co.firstlineno}}; i <= {{last_line}}; i++){
+            unshowLine(i);
+        }
             });
         }
 
@@ -110,8 +112,8 @@
     <h1>Code Object Visualizer</h1>
 
     <div class="row">
-        <div class="col-md-6 table-responsive">
-            <h2>Code Object Properties</h2>
+        <div class="row-md-6 table-responsive">
+            <details><summary>Code Object Properties</summary>
             <table class="table table-sm">
                 <thead>
                     <tr>
@@ -121,70 +123,74 @@
                 </thead>
                 <tbody>
                     {% for co_attr, value in co.items() %}
-                        <tr><td>{{ co_attr }}</td><td>{{ value }}</td></tr>
+                    <tr>
+                        <td>{{ co_attr }}</td>
+                        <td>{{ value }}</td>
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
+        </details>
         </div>
-        <div class="col-md-6 table-responsive">
+        <div class="table-responsive">
             <h2>Disassembled Code</h2>
             <table class="table table-sm">
                 <thead>
                     <tr>
-                        <th>OpCode</th>
-                        <th>Operation Name</th>
-                        <th>Numeric Arg</th>
-                        <th>Resolved Arg Value</th>
-                        <th>Argument description</th>
+                        <th>Line</th>
+                        <th>Source Code</th>
+                        <th>Op Code</th>
+                        <th>Op Name</th>
+                        <th>Arg</th>
+                        <th>Res'd Arg</th>
                         <th>Index Offset</th>
-                        <th>Starts Line</th>
-                        <th>Is Jump Target?</th>
+                        <th>Jump Target?</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% set ns = namespace(lastline=1) %}
-                    {% for instr in ins %}
+                    {% for source, instr in ins %}
                     {% if instr.starts_line %}
-                        {% set ns.lastline = instr.starts_line %}
+                    {% set ns.lastline = instr.starts_line %}
                     {% endif %}
                     <tr onmouseenter="showLine({{ns.lastline}})" onmouseleave="unshowLine({{ns.lastline}})">
+                        <td>{{instr.starts_line if instr.starts_line is not none else ''}}</td>
+                        <td><pre>{{source}}</pre></td>
                         <td>{{instr.opcode}}</td>
-                        <td>{{instr.opname}}</td>
-                        <td>{{instr.arg}}</td>
-                        <td>{{instr.argval}}</td>
-                        <td>{{instr.argrepr}}</td>
+                        <td><pre>{{instr.opname}}</pre></td>
+                        <td>{{instr.arg if instr.arg is not none else ''}}</td>
+                        <td>{{instr.argval if instr.arg is not none else ''}}</td>
                         <td>{{instr.offset}}</td>
-                        <td>{{instr.starts_line}}</td>
                         <td>{{instr.is_jump_target}}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
-            </div>
         </div>
-        <div class="row">
-            <div class="col-md-12">
-                {{code}}
-            </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            {{code}}
         </div>
-        <div class="row">
-            <div class="col-md-8">
-                <p>
-                    Graph direction:
-                    <input type="button" id="btn-UD" value="Up-Down">
-                    <input type="button" id="btn-DU" value="Down-Up">
-                    <input type="button" id="btn-LR" value="Left-Right">
-                    <input type="button" id="btn-RL" value="Right-Left">
-                    <input type="hidden" id='direction' value="UD">
-                </p>
-                <div id="mynetwork"></div>
-            </div>
-            <div class="col-md-4">
-                <h2>Node Properties</h2>
-                <i>Select a node on the AST graph to see properties.</i>
-                <p id="selection"></p>
-            </div>
+    </div>
+    <div class="row">
+        <div class="col-md-8">
+            <p>
+                Graph direction:
+                <input type="button" id="btn-UD" value="Up-Down">
+                <input type="button" id="btn-DU" value="Down-Up">
+                <input type="button" id="btn-LR" value="Left-Right">
+                <input type="button" id="btn-RL" value="Right-Left">
+                <input type="hidden" id='direction' value="UD">
+            </p>
+            <div id="mynetwork"></div>
         </div>
+        <div class="col-md-4">
+            <h2>Node Properties</h2>
+            <i>Select a node on the AST graph to see properties.</i>
+            <p id="selection"></p>
+        </div>
+    </div>
     <script type="text/javascript">
         var directionInput = document.getElementById("direction");
         var btnUD = document.getElementById("btn-UD");
@@ -209,4 +215,5 @@
         };
     </script>
 </body>
+
 </html>

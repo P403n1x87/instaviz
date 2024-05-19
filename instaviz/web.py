@@ -1,14 +1,18 @@
 """
 Entry points for managing a micro-http server to serve tables.
 """
+
 import ast
 import json
-from bottle import run, jinja2_view, route, static_file, TEMPLATE_PATH
+import linecache
 import os
-from pygments import highlight
-from pygments.lexers import PythonLexer
-from pygments.formatters import HtmlFormatter
+from types import CodeType
+
+from bottle import TEMPLATE_PATH, jinja2_view, route, run, static_file
 from dill import source
+from pygments import highlight
+from pygments.formatters import HtmlFormatter
+from pygments.lexers import PythonLexer
 
 data = {}
 
@@ -16,7 +20,7 @@ data = {}
 @route("/static/<filename>")
 def server_static(filename):
     abs_app_dir_path = os.path.dirname(os.path.realpath(__file__))
-    root_path = os.path.join(abs_app_dir_path, 'static')
+    root_path = os.path.join(abs_app_dir_path, "static")
     return static_file(filename, root=root_path)
 
 
@@ -29,7 +33,7 @@ def home():
         "".join(data["src"]),
         PythonLexer(),
         HtmlFormatter(
-            linenos=True, linenostart=data["co"]["co_firstlineno"], linespans="src"
+            linenos=True, linenostart=data["co"]["firstlineno"], linespans="src"
         ),
     )
     return data
@@ -92,21 +96,37 @@ def node_to_dict(node, parent):
     return i
 
 
-def show_code_object(obj, instructions, host, port):
+def show_code_object(obj, instructions, host="localhost", port=8080):
     """
     Render code object
     """
-    cobj = obj.__code__
+    if isinstance(obj, CodeType):
+        cobj = obj
+    else:
+        cobj = obj.__code__
     global data
     data["co"] = {
-        attr: getattr(cobj, attr)
-        for attr in dir(cobj)
-        if attr.startswith("co_")
+        a: v
+        for a, v in (
+            (attr[3:], getattr(cobj, attr))
+            for attr in dir(cobj)
+            if attr.startswith("co_")
+        )
+        if not isinstance(v, bytes)
     }
-    data["co"]["co_code"] = data["co"]["co_code"].hex()
 
     data["tpl_t"] = "CO"
-    data["ins"] = list(instructions)
+    data["ins"] = list(
+        (
+            (
+                linecache.getline(cobj.co_filename, i.starts_line)
+                if i.starts_line is not None
+                else ""
+            ),
+            i,
+        )
+        for i in instructions
+    )
 
     (lines, start_line) = source.getsourcelines(obj)
     src = "".join(lines)

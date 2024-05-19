@@ -1,4 +1,5 @@
 import pathlib
+
 from setuptools import setup
 
 # The directory containing this file
@@ -26,5 +27,5 @@ setup(
     ],
     packages=["instaviz"],
     include_package_data=True,
-    install_requires=["bottle", "jinja2", "pygments", "dill"]
+    requires=["bottle", "jinja2", "pygments", "dill"],
 )
